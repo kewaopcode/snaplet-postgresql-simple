@@ -141,12 +141,12 @@ pgsDefaultConfig connstr = PGSConfig connstr 1 5 20
 -- where you have common code (that requires a database connection) that you wish to call from
 -- other blocks of code that may require a database connection and you still want to make sure
 -- that you are only using one connection through all of your nested methods.
-withPG :: (HasPostgres m)
+withPG :: (MonadBaseControl IO m, HasPostgres m)
        => m b -> m b
 withPG f = do
     s <- getPostgresState
     case s of
-      (PostgresPool p) -> withResource p (\c -> setLocalPostgresState (PostgresConn c) f)
+      (PostgresPool p) -> control $ \run -> withResource p (\c -> run $ setLocalPostgresState (PostgresConn c) f)
       (PostgresConn _) -> f
 
 
